@@ -3,4 +3,4 @@
 
 Tasks:
 
-- [ ] Write tests for functions from `ds_tools.py`
+- [ ] Write tests for functions from `tools.py`
