@@ -108,13 +108,8 @@ def relative_change(df: pd.Series, val_col: str, lag: int):
     return df
 
 
-
-
 def save_experiment(
-    objects: Dict[str, Any],
-    path: str,
-    exp_name: str = "",
-    description: str = "",
+    objects: Dict[str, Any], path: str, exp_name: str = "", description: str = "",
 ):
     """
     Saves experiment to csv. Tuned for forecasting experiments.
@@ -398,11 +393,7 @@ PLOTS
 
 
 def hist(
-    df: pd.DataFrame,
-    col: str,
-    name: str = "",
-    renderer="browser",
-    return_fig=False,
+    df: pd.DataFrame, col: str, name: str = "", renderer="browser", return_fig=False,
 ):
     """
     Histogram ~ probability density function
