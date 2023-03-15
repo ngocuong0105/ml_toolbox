@@ -108,10 +108,12 @@ def relative_change(df: pd.Series, val_col: str, lag: int):
     return df
 
 
+
+
 def save_experiment(
     objects: Dict[str, Any],
     path: str,
-    exp_name: str,
+    exp_name: str = "",
     description: str = "",
 ):
     """
