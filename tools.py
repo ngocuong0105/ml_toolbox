@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 from scipy.stats.mstats import winsorize
-from typing import Any, Callable, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
 
 """
