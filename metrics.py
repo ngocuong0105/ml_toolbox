@@ -91,7 +91,7 @@ def smape(data, real, fct):
 
 
 # vectorized symmetric mean absolute percentage error
-def vsmape(data, real, fct):
+def vsmape(data, real, fct) -> np.array:
     """
     SMAPE - https://en.wikipedia.org/wiki/Symmetric_mean_absolute_percentage_error
     define SMAPE = 0, when fct and real are 0.
