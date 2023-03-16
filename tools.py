@@ -512,6 +512,9 @@ def hist_xcol(
 
 
 def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="browser"):
+    """
+    Plots pdf curve using KDE estimate.
+    """
     if isinstance(ycols, str):
         ycols = [ycols]
 
@@ -523,6 +526,46 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="bro
     if title == "":
         title = ", ".join(ycols)
     fig.update_layout(title_text=title)
+    fig.show(renderer=renderer)
+
+
+
+def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser"):
+    """
+    Plots cdf share curve. Sorts the values in descending order and 
+    plots the cumulative sum over the total sum.
+
+    One usecase is to explore forecasting errors (ycol = error)
+    What percentage of the highest errors account for most of the total error.
+
+    See cdf_share_plot.ahtml for example. (rename to html file)
+    """
+    df = df.sort_values(ycol, ascending=False)
+    data = []
+    for value in np.linspace(0, 1, 500):
+        data.append({
+            f'Share of highest {ycol}': value,
+            'Share of total': df[df[ycol] > df[ycol].quantile(1 - value)][ycol].sum() /df[ycol].sum()
+            })
+    df_plot = pd.DataFrame(data)
+    fig = px.line(
+        df_plot, 
+        x=f'Share of highest {ycol}', 
+        y="Share of total", 
+        title=f'Skew of {ycol} values towards the highest')
+
+    fig.add_trace(go.Scatter(x=np.linspace(0, 1, 500), y=np.linspace(0, 1, 500),
+                        mode='lines',
+                        name='x=y'))
+    fig.update_xaxes(
+        range = [0,1]
+    )
+    fig.update_yaxes(
+        scaleanchor="x",
+        scaleratio=1,
+    )
+
+    fig.update_layout(autosize=False, width=600, height=600, showlegend=True)
     fig.show(renderer=renderer)
 
 
@@ -561,7 +604,7 @@ def line_plot(
 ):
     """
     Plots multiple y lines over xcol
-    Example: smooth.html
+    Example: smooth.ahtml (rename to html file)
     """
     df = _filter(df, filters)
     df = df.sort_values(xcol)
