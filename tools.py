@@ -488,7 +488,8 @@ def bar_plot(
     title="",
 ):
     """
-    Bar blot with error bars/confidence intervals.
+    Bar blot with error bars/confidence intervals. 
+    Change ycol and xcol to have horizontal bars.
     """
     # order by mean of ycol
     fig = sns.barplot(
@@ -532,6 +533,10 @@ def scatter_plot(
     size=12,
     trendline=None,
 ):
+    """
+    Scatter plot with trendline
+    trendline: str can take "ols", "lowess", "glm", "rlm"
+    """
     df = df.sort_values(xcol)
     if isinstance(ycols, str):
         ycols = [ycols]
@@ -539,6 +544,39 @@ def scatter_plot(
     fig.update_traces(marker=dict(size=size))
     fig.show(renderer=renderer)
 
+
+def reg_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
+    """
+    Regression plot with confidence intervals.
+    """
+
+    plt.figure(figsize=figsize)
+    sns.regplot(x=df[xcol], y=df[ycol], ci=95, color="b")
+    plt.show()
+
+
+def reg_plots(df: pd.DataFrame, xcol: str, ycol: str, hue_col: str, figsize: tuple = (16, 6)):
+    """
+    Regression plot with confidence intervals. See reg_plots.png.
+    xcol = bmi
+    ycol = charges
+    hue_col = smoker
+    """
+
+    plt.figure(figsize=figsize)
+    sns.lmplot(x=xcol, y=ycol, data=df, hue = hue_col,ci=95)
+    plt.show()
+
+
+def categorical_scatter_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
+    """
+    Scatter plot with categorical x axis. See categorical_scatter_plot.png.
+    xcol = smoker
+    ycol = charges
+    """
+    plt.figure(figsize=figsize)
+    sns.swarmplot(x=df[xcol],y=df[ycol])
+    plt.show()
 
 def box_plot(df: pd.DataFrame, xcol: str, ycol: str, renderer="browser"):
     fig = px.box(df, x=xcol, y=ycol, points="all")
@@ -580,6 +618,9 @@ def fct_plot(
     return_fig=False,
     **filters,
 ):
+    """
+    Most enhanced forecasting plot using plotly.
+    """
     df = _filter(df, filters)
     forecast_start = pd.to_datetime(forecast_start)
     if len(filters):
@@ -624,6 +665,9 @@ def fct_error_plot(
     return_fig=False,
     **filters,
 ):
+    """
+    Histogram plot with the distribution of errors between actual and forecasted values.
+    """
     df = _filter(df, filters)
     name = ", ".join("{} = {}".format(key, value) for key, value in filters.items())
     df["error"] = df[fct] - df[act]
