@@ -13,6 +13,7 @@ from pathlib import Path
 from scipy.stats.mstats import winsorize
 from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 """
 CALCULATIONS
@@ -75,6 +76,46 @@ def map_mult_dfs(
     )
 
 
+def get_fct_intervals(fct_start, last_fct_start, fct_hor, fct_freq):
+    """
+    Returns a list of tuples with the start and end date of the forecast intervals.
+    fct_start: start date of the forecast
+    fct_end: end date of the forecast
+    fct_hor: forecast horizon
+    fct_freq: forecast frequency, can be 'd' (daily), 'm' (monthly) or 'y' (yearly)
+
+    Example:
+    fct_start = '2020-01-01'
+    last_fct_start = '2020-01-05'
+    fct_hor = 7
+    fct_freq = 'd'
+    Output:
+    [('2020-01-01', '2020-01-08'),
+    ('2020-01-02', '2020-01-09'),
+    ('2020-01-03', '2020-01-10'),
+    ('2020-01-04', '2020-01-11'),
+    ('2020-01-05', '2020-01-12')]
+    """
+
+    fct_start = datetime.strptime(fct_start, "%Y-%m-%d")
+    last_fct_start = datetime.strptime(last_fct_start, "%Y-%m-%d")
+    if fct_freq == "d":
+        hor = relativedelta(days=fct_hor)
+        incr = relativedelta(days=1)
+    elif fct_freq == "m":
+        hor = relativedelta(months=fct_hor)
+        incr = relativedelta(months=1)
+    elif fct_freq == "y":
+        hor = relativedelta(years=fct_hor)
+        incr = relativedelta(years=1)
+    fct_intervals = []
+    while fct_start <= last_fct_start:
+        end = fct_start + hor
+        fct_intervals.append((fct_start.strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")))
+        fct_start += incr
+    return fct_intervals
+
+
 def normalize(df: pd.DataFrame, cols: Union[str, List[str]] = [], mode="meanstd"):
     """
     Normalize numerical columns. Default behaviour is to normalize all numerical columns.
@@ -109,7 +150,11 @@ def relative_change(df: pd.Series, val_col: str, lag: int):
 
 
 def save_experiment(
-    objects: Dict[str, Any], path: str, exp_name: str = "", description: str = "",
+    objects: Dict[str, Any],
+    path: str,
+    exp_name: str = "",
+    description: str = "",
+    new_dir: bool = True,
 ):
     """
     Saves experiment to csv. Tuned for forecasting experiments.
@@ -117,9 +162,11 @@ def save_experiment(
     if len(os.listdir(path)) == 0:
         experiment_num = 1
     else:
-        experiment_num = max([int(x) for x in os.listdir(path) if x.isnumeric()]) + 1
-
-    Path(path + f"/{experiment_num}").mkdir(parents=True, exist_ok=True)
+        experiment_num = max([int(x) for x in os.listdir(path) if x.isnumeric()]) + int(
+            new_dir
+        )
+    if new_dir:
+        Path(path + f"/{experiment_num}").mkdir(parents=True, exist_ok=True)
     for name, obj in objects.items():
         if isinstance(obj, pd.DataFrame):
             obj.to_csv(path + f"/{experiment_num}/{name}.csv", index=False)
@@ -555,7 +602,9 @@ def reg_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
     plt.show()
 
 
-def reg_plots(df: pd.DataFrame, xcol: str, ycol: str, hue_col: str, figsize: tuple = (16, 6)):
+def reg_plots(
+    df: pd.DataFrame, xcol: str, ycol: str, hue_col: str, figsize: tuple = (16, 6)
+):
     """
     Regression plot with confidence intervals. See reg_plots.png.
     xcol = bmi
@@ -564,19 +613,22 @@ def reg_plots(df: pd.DataFrame, xcol: str, ycol: str, hue_col: str, figsize: tup
     """
 
     plt.figure(figsize=figsize)
-    sns.lmplot(x=xcol, y=ycol, data=df, hue = hue_col,ci=95)
+    sns.lmplot(x=xcol, y=ycol, data=df, hue=hue_col, ci=95)
     plt.show()
 
 
-def categorical_scatter_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
+def categorical_scatter_plot(
+    df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)
+):
     """
     Scatter plot with categorical x axis. See categorical_scatter_plot.png.
     xcol = smoker
     ycol = charges
     """
     plt.figure(figsize=figsize)
-    sns.swarmplot(x=df[xcol],y=df[ycol])
+    sns.swarmplot(x=df[xcol], y=df[ycol])
     plt.show()
+
 
 def box_plot(df: pd.DataFrame, xcol: str, ycol: str, renderer="browser"):
     fig = px.box(df, x=xcol, y=ycol, points="all")

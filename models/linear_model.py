@@ -1,5 +1,5 @@
 import pandas as pd
-from utils.models.model import SupervisedModel
+from ml_toolbox.models.model import SupervisedModel
 from sklearn.linear_model import LinearRegression
 
 

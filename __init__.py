@@ -1,3 +1,3 @@
-from utils.ds_tools import *
-from utils.models.last_value import LastValue
-from utils.models.linear_model import LinearModel
+from ml_toolbox.tools import *
+from ml_toolbox.models.last_value import LastValue
+from ml_toolbox.models.linear_model import LinearModel

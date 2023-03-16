@@ -1,6 +1,6 @@
 import pandas as pd
 import copy
-from utils.models.model import SupervisedModel
+from ml_toolbox.models.model import SupervisedModel
 
 
 class LastValue(SupervisedModel):
