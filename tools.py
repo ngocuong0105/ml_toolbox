@@ -530,7 +530,7 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="bro
 
 
 
-def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser"):
+def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=False):
     """
     Plots cdf share curve. Sorts the values in descending order and 
     plots the cumulative sum over the total sum.
@@ -566,6 +566,8 @@ def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser"):
     )
 
     fig.update_layout(autosize=False, width=600, height=600, showlegend=True)
+    if return_fig:
+        return fig
     fig.show(renderer=renderer)
 
 
