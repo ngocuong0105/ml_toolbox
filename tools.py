@@ -529,7 +529,6 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="bro
     fig.show(renderer=renderer)
 
 
-
 def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=False):
     """
     Plots cdf share curve. Sorts the values in descending order and 
@@ -543,26 +542,31 @@ def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=F
     df = df.sort_values(ycol, ascending=False)
     data = []
     for value in np.linspace(0, 1, 500):
-        data.append({
-            f'Share of highest {ycol}': value,
-            'Share of total': df[df[ycol] > df[ycol].quantile(1 - value)][ycol].sum() /df[ycol].sum()
-            })
+        data.append(
+            {
+                f"Share of highest {ycol}": value,
+                "Share of total": df[df[ycol] > df[ycol].quantile(1 - value)][
+                    ycol
+                ].sum()
+                / df[ycol].sum(),
+            }
+        )
     df_plot = pd.DataFrame(data)
     fig = px.line(
-        df_plot, 
-        x=f'Share of highest {ycol}', 
-        y="Share of total", 
-        title=f'Skew of {ycol} values towards the highest')
-
-    fig.add_trace(go.Scatter(x=np.linspace(0, 1, 500), y=np.linspace(0, 1, 500),
-                        mode='lines',
-                        name='x=y'))
-    fig.update_xaxes(
-        range = [0,1]
+        df_plot,
+        x=f"Share of highest {ycol}",
+        y="Share of total",
+        title=f"Skew of {ycol} values towards the highest",
     )
+
+    fig.add_trace(
+        go.Scatter(
+            x=np.linspace(0, 1, 500), y=np.linspace(0, 1, 500), mode="lines", name="x=y"
+        )
+    )
+    fig.update_xaxes(range=[0, 1])
     fig.update_yaxes(
-        scaleanchor="x",
-        scaleratio=1,
+        scaleanchor="x", scaleratio=1,
     )
 
     fig.update_layout(autosize=False, width=600, height=600, showlegend=True)
@@ -573,16 +577,24 @@ def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=F
 
 def bar_plot(
     df: pd.DataFrame,
-    xcol,
+    xcol: str,
     ycol: str,
     estimator: str = "mean",
-    return_fig=False,
+    return_fig: bool = False,
+    swap_axis: bool = False,
+    figsize: tuple = (16, 10),
+    ascending: bool = True,
     title="",
 ):
     """
-    Bar blot with error bars/confidence intervals. 
-    Change ycol and xcol to have horizontal bars.
+    Bar blot with error bars/confidence intervals.
+    If you want to have horizontal bars specify swap_axis = True.
+    Requires seaborn >= 0.12.2. Note that in wandb seaborn figures does not render x-axis and y-axis
     """
+    plt.figure(figsize=figsize)
+    order_x, order_y = xcol, ycol
+    if swap_axis:
+        xcol, ycol = ycol, xcol
     # order by mean of ycol
     fig = sns.barplot(
         data=df,
@@ -590,7 +602,10 @@ def bar_plot(
         y=ycol,
         errorbar="sd",
         estimator=estimator,
-        order=df.groupby(xcol).mean().sort_values(ycol).index.unique(),
+        order=df.groupby(order_x)
+        .mean()
+        .sort_values(order_y, ascending=ascending)
+        .index.unique(),
     )
     fig.set_title(title)
     if return_fig:
