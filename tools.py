@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 from scipy.stats.mstats import winsorize
+from sklearn.metrics import confusion_matrix
 from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -434,6 +435,12 @@ def rolling_features(
     return data, feats
 
 
+def get_confusion_matrix(data, real, fct):
+    """Get the confusion matrix"""
+    tn, fp, fn, tp = confusion_matrix(data[real], data[fct]).ravel()
+    return tn, fp, fn, tp
+
+
 """
 PLOTS
 """
@@ -838,6 +845,26 @@ def usa_plot(
     if return_fig:
         return fig
     fig.show(renderer=renderer)
+
+
+def plot_confusion_matrix(
+    data: pd.DataFrame,
+    real: str,
+    fct: str,
+    figsize: tuple = (8, 8),
+    return_fig: bool = False,
+):
+    """Plot the confusion matrix"""
+    tn, fp, fn, tp = get_confusion_matrix(data, real, fct)
+    confusion = np.array([[tn, fp], [fn, tp]])
+    plt.figure(figsize=figsize)
+    fig = sns.heatmap(confusion, annot=True, fmt="d", cmap="YlGnBu")
+    plt.title("Confusion matrix")
+    plt.ylabel("Actual label")
+    plt.xlabel("Predicted label")
+    if return_fig:
+        return fig.get_figure()
+    plt.show()
 
 
 DEFAULT_LAYOUT = dict(

@@ -124,3 +124,15 @@ def mape_range(data, real, fct):
     return np.mean(np.abs(data[fct] - data[real])) / (
         np.max(data[real]) - np.min(data[real])
     )
+
+
+def recall(data, real, fct):
+    if len(data) == 0:
+        return 0
+    return skm.recall_score(data[real], data[fct])
+
+
+def precision(data, real, fct, zero_division="warn"):
+    if len(data) == 0:
+        return 0
+    return skm.precision_score(data[real], data[fct], zero_division=zero_division)
