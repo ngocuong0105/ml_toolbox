@@ -15,10 +15,24 @@ from sklearn.metrics import confusion_matrix
 from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from functools import wraps
+from time import time
+
 
 """
 CALCULATIONS
 """
+
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        print(f'func:{f.__name__} took: {round(te-ts)} sec')
+        return result
+    return wrap
 
 
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
