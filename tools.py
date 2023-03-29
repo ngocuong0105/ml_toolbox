@@ -535,6 +535,7 @@ def hist_xcol(
         bargroupgap=0.1,  # gap between bars of the same location coordinates
     )
     fig.update_xaxes(categoryorder=f"total {order}")
+    fig.update_yaxes(categoryorder=f"total {order}")
     if return_fig:
         return fig
     fig.show(renderer=renderer)
