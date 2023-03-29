@@ -497,6 +497,7 @@ def hist_xcol(
     renderer="browser",
     title="",
     orientation='v',
+    order='ascending',
     return_fig=False,
 ):
     """
@@ -504,6 +505,11 @@ def hist_xcol(
     xcol: column to be used as x axis - nb: you specify the x axis!
     ycols: column(s) to be used as y axis
     Check images folder for example.
+
+    orientation: 'v','h'
+    order: 'ascending', 'descending'
+
+    If you choose horizontal orientation, you must change xcols and ycols
     """
     if isinstance(ycols, str):
         ycols = [ycols]
@@ -528,7 +534,7 @@ def hist_xcol(
         bargap=0.2,  # gap between bars of adjacent location coordinates
         bargroupgap=0.1,  # gap between bars of the same location coordinates
     )
-    fig.update_xaxes(categoryorder="total ascending")
+    fig.update_xaxes(categoryorder=f"total {order}")
     if return_fig:
         return fig
     fig.show(renderer=renderer)
