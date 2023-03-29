@@ -496,6 +496,7 @@ def hist_xcol(
     histfunc="sum",
     renderer="browser",
     title="",
+    orientation='v',
     return_fig=False,
 ):
     """
@@ -515,6 +516,7 @@ def hist_xcol(
                 histfunc=histfunc,
                 name=f"{ycol}",  # name used in legend and hover labels
                 opacity=0.75,
+                orientation=orientation,
             )
         )
     if title == "":
