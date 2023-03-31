@@ -890,6 +890,17 @@ def plot_confusion_matrix(
     plt.show()
 
 
+def pie_chart(df: pd.DataFrame, xcol: str, ycol: str, renderer:str = 'browser', return_fig:bool = False):
+    fig = px.pie(df, values=ycol, names=xcol,
+             title=f'{ycol} per {xcol}',
+             hover_data=[ycol])
+    fig.update_traces(textposition='inside', textinfo='percent+label')
+    if return_fig:
+        return fig
+    fig.show(renderer=renderer)
+
+
+
 DEFAULT_LAYOUT = dict(
     xaxis=dict(
         type="date",
