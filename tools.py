@@ -30,8 +30,9 @@ def timing(f):
         ts = time()
         result = f(*args, **kw)
         te = time()
-        print(f'func:{f.__name__} took: {round(te-ts)} sec')
+        print(f"func:{f.__name__} took: {round(te-ts)} sec")
         return result
+
     return wrap
 
 
@@ -461,7 +462,11 @@ PLOTS
 
 
 def hist(
-    df: pd.DataFrame, col: str, name: str = "", renderer="browser", return_fig=False,
+    df: pd.DataFrame,
+    col: str,
+    name: str = "",
+    renderer="browser",
+    return_fig=False,
 ):
     """
     Histogram ~ probability density function
@@ -561,7 +566,7 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="bro
 
 def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=False):
     """
-    Plots cdf share curve. Sorts the values in descending order and 
+    Plots cdf share curve. Sorts the values in descending order and
     plots the cumulative sum over the total sum.
 
     One usecase is to explore forecasting errors (ycol = error)
@@ -596,7 +601,8 @@ def cdf_share_plot(df: pd.DataFrame, ycol: str, renderer="browser", return_fig=F
     )
     fig.update_xaxes(range=[0, 1])
     fig.update_yaxes(
-        scaleanchor="x", scaleratio=1,
+        scaleanchor="x",
+        scaleratio=1,
     )
 
     fig.update_layout(autosize=False, width=600, height=600, showlegend=True)
