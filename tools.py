@@ -3,6 +3,7 @@ import pickle
 from urllib.request import urlopen
 import pandas as pd
 import numpy as np
+from numba import jit
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
@@ -30,7 +31,7 @@ def timing(f):
         ts = time()
         result = f(*args, **kw)
         te = time()
-        print(f"func:{f.__name__} took: {round(te-ts)} sec")
+        print(f"func: {f.__name__} took: {round(te-ts,5)} sec")
         return result
 
     return wrap
