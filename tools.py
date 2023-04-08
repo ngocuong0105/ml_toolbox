@@ -727,8 +727,16 @@ def categorical_scatter_plot(
     plt.show()
 
 
-def box_plot(df: pd.DataFrame, xcol: str, ycol: str, renderer="browser"):
-    fig = px.box(df, x=xcol, y=ycol, points="all")
+def box_plot(df: pd.DataFrame, xcol: str, ycol: str, points: str ='all', renderer="browser"):
+    """
+    Box plot with scattered points.
+    https://plotly.com/python/box-plots/ -> search for "Display the underlying data"
+
+    points: str can take "all", None
+    assumes xcol is categorical
+    """
+
+    fig = px.box(df, x=xcol, y=ycol, points=points)
     fig.show(renderer=renderer)
 
 
