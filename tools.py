@@ -26,6 +26,9 @@ CALCULATIONS
 
 
 def timing(f):
+    """
+    Timing decorator for functions
+    """
     @wraps(f)
     def wrap(*args, **kw):
         ts = time()
@@ -36,6 +39,21 @@ def timing(f):
 
     return wrap
 
+def ram_usage(f):
+    """
+    RAM usage decorator for functions
+    """
+    @wraps(f)
+    def wrap(*args, **kw):
+        import psutil
+        import os
+        process = psutil.Process(os.getpid())
+        mem_before = process.memory_info().rss
+        result = f(*args, **kw)
+        mem_after = process.memory_info().rss
+        print(f"func: {f.__name__} used: {round((mem_after-mem_before)/1024/1024,2)} MB")
+        return result
+    return wrap
 
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
