@@ -29,6 +29,7 @@ def timing(f):
     """
     Timing decorator for functions
     """
+
     @wraps(f)
     def wrap(*args, **kw):
         ts = time()
@@ -39,21 +40,28 @@ def timing(f):
 
     return wrap
 
+
 def ram_usage(f):
     """
     RAM usage decorator for functions
     """
+
     @wraps(f)
     def wrap(*args, **kw):
         import psutil
         import os
+
         process = psutil.Process(os.getpid())
         mem_before = process.memory_info().rss
         result = f(*args, **kw)
         mem_after = process.memory_info().rss
-        print(f"func: {f.__name__} used: {round((mem_after-mem_before)/1024/1024,2)} MB")
+        print(
+            f"func: {f.__name__} used: {round((mem_after-mem_before)/1024/1024,2)} MB"
+        )
         return result
+
     return wrap
+
 
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
@@ -520,8 +528,8 @@ def hist_xcol(
     histfunc="sum",
     renderer="browser",
     title="",
-    orientation='v',
-    order='ascending',
+    orientation="v",
+    order="ascending",
     return_fig=False,
 ):
     """
@@ -710,14 +718,15 @@ def scatter_plot(
 def point_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 10)):
     """
     Show point estimates and errors using dot marks.
-    A point plot represents an estimate of central tendency for a numeric variable by the position of the dot 
+    A point plot represents an estimate of central tendency for a numeric variable by the position of the dot
     and provides some indication of the uncertainty around that estimate using error bars.
-    
+
     https://seaborn.pydata.org/generated/seaborn.pointplot.html
     """
     plt.figure(figsize=figsize)
     sns.pointplot(x=xcol, y=ycol, data=df)
     plt.show()
+
 
 def reg_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
     """
@@ -757,7 +766,9 @@ def categorical_scatter_plot(
     plt.show()
 
 
-def box_plot(df: pd.DataFrame, xcol: str, ycol: str, points: str ='all', renderer="browser"):
+def box_plot(
+    df: pd.DataFrame, xcol: str, ycol: str, points: str = "all", renderer="browser"
+):
     """
     Box plot with scattered points.
     https://plotly.com/python/box-plots/ -> search for "Display the underlying data"
@@ -935,15 +946,20 @@ def plot_confusion_matrix(
     plt.show()
 
 
-def pie_chart(df: pd.DataFrame, xcol: str, ycol: str, renderer:str = 'browser', return_fig:bool = False):
-    fig = px.pie(df, values=ycol, names=xcol,
-             title=f'{ycol} per {xcol}',
-             hover_data=[ycol])
-    fig.update_traces(textposition='inside', textinfo='percent+label')
+def pie_chart(
+    df: pd.DataFrame,
+    xcol: str,
+    ycol: str,
+    renderer: str = "browser",
+    return_fig: bool = False,
+):
+    fig = px.pie(
+        df, values=ycol, names=xcol, title=f"{ycol} per {xcol}", hover_data=[ycol]
+    )
+    fig.update_traces(textposition="inside", textinfo="percent+label")
     if return_fig:
         return fig
     fig.show(renderer=renderer)
-
 
 
 DEFAULT_LAYOUT = dict(
