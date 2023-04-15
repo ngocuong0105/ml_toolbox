@@ -707,6 +707,18 @@ def scatter_plot(
     fig.show(renderer=renderer)
 
 
+def point_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 10)):
+    """
+    Show point estimates and errors using dot marks.
+    A point plot represents an estimate of central tendency for a numeric variable by the position of the dot 
+    and provides some indication of the uncertainty around that estimate using error bars.
+    
+    https://seaborn.pydata.org/generated/seaborn.pointplot.html
+    """
+    plt.figure(figsize=figsize)
+    sns.pointplot(x=xcol, y=ycol, data=df)
+    plt.show()
+
 def reg_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
     """
     Regression plot with confidence intervals.
