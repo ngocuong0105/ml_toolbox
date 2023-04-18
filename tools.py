@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import json
 from pathlib import Path
 from scipy.stats.mstats import winsorize
+from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
@@ -481,6 +482,25 @@ def get_confusion_matrix(data, real, fct):
     """Get the confusion matrix"""
     tn, fp, fn, tp = confusion_matrix(data[real], data[fct]).ravel()
     return tn, fp, fn, tp
+
+
+def apply_pca(df: pd.DataFrame, feature_cols:List[str], other_cols: List[str], n_components:int) -> pd.DataFrame:
+    """
+    PCA transformation
+
+    Assumes no Nans in df[feature_cols]
+    """
+    df_standardized = (df[feature_cols] - df[feature_cols].mean()) / df[feature_cols].std()
+
+    # Perform PCA
+    pca = PCA()
+    principal_components = pca.fit_transform(df_standardized)
+
+    # Create new DataFrame with principal components
+    columns = ['PC' + str(i+1) for i in range(len(feature_cols))]
+    df_pca = pd.DataFrame(data=principal_components, columns=columns)
+    df_pca = pd.concat([df[other_cols], df_pca], axis=1)
+    return df_pca.iloc[:,:len(other_cols)+n_components]
 
 
 """
