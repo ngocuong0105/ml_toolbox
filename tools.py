@@ -735,7 +735,7 @@ def scatter_plot(
     fig.show(renderer=renderer)
 
 
-def point_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 10)):
+def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsize: tuple = (16, 10)):
     """
     Show point estimates and errors using dot marks.
     A point plot represents an estimate of central tendency for a numeric variable by the position of the dot
@@ -743,8 +743,11 @@ def point_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 10)
 
     https://seaborn.pydata.org/generated/seaborn.pointplot.html
     """
+    if isinstance(ycols, str):
+        ycols = [ycols]
     plt.figure(figsize=figsize)
-    sns.pointplot(x=xcol, y=ycol, data=df)
+    for ycol,color in zip(ycols, sns.color_palette(n_colors=len(ycols))):
+        sns.pointplot(x=xcol, y=ycol, data=df,color=color)
     plt.show()
 
 
