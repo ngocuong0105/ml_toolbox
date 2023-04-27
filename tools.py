@@ -512,6 +512,7 @@ def hist(
     df: pd.DataFrame,
     col: str,
     name: str = "",
+    histnorm:str="probability",
     renderer="browser",
     return_fig=False,
 ):
@@ -526,12 +527,12 @@ def hist(
         yaxis=dict(range=[0, 1]),
     )
     fig = go.Figure(
-        data=[go.Histogram(x=df[col], histnorm="probability")], layout=layout
+        data=[go.Histogram(x=df[col], histnorm=histnorm)], layout=layout
     )
     fig.update_layout(
         title_text=f"{name}",  # title of plot
         xaxis_title_text=f"{col}",  # xaxis label
-        yaxis_title_text="Fraction",  # yaxis label
+        yaxis_title_text="histnorm",  # yaxis label
         # bargap=0.2,  # gap between bars of adjacent location coordinates
         bargroupgap=0.1,  # gap between bars of the same location coordinates
     )
@@ -550,6 +551,8 @@ def hist_xcol(
     title="",
     orientation="v",
     order="ascending",
+    bargap=0.2, 
+    bargroupgap=0.1,
     return_fig=False,
 ):
     """
@@ -583,8 +586,8 @@ def hist_xcol(
         title_text=title,  # title of plot
         xaxis_title_text=f"{xcol}",  # xaxis label
         yaxis_title_text="Value",  # yaxis label
-        bargap=0.2,  # gap between bars of adjacent location coordinates
-        bargroupgap=0.1,  # gap between bars of the same location coordinates
+        bargap=bargap,  # gap between bars of adjacent location coordinates
+        bargroupgap=bargroupgap,  # gap between bars of the same location coordinates
     )
     fig.update_xaxes(categoryorder=f"total {order}")
     fig.update_yaxes(categoryorder=f"total {order}")
@@ -593,7 +596,31 @@ def hist_xcol(
     fig.show(renderer=renderer)
 
 
-def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="browser"):
+def count_plot(df: pd.DataFrame, col: str, title: str = "",  figsize=(16, 5), pallette=None,order=None):
+    """
+    Count plot for values in a column col
+    """
+    plt.figure(figsize=figsize)
+    sns.countplot(x=col, data=df, palette=pallette,order=order)
+    plt.title(title)
+    plt.show()
+
+
+def count_nan_plot(df: pd.DataFrame, figsize = (18,9)):
+    df_missing = df.isna().sum() / len(df) *100
+    df_missing_index = df_missing.index
+    df_missing_values = df_missing.values
+
+    fig, ax = plt.subplots(figsize=figsize)
+    barchart = sns.barplot(x = df_missing_index, y = df_missing_values, ax = ax)
+    barchart.axes.set_title("Share of missing values in train data", fontsize=24, loc = 'center')
+    barchart.bar_label(barchart.containers[0], fmt="%.1f%%", fontsize=10)
+    barchart.yaxis.set_tick_params(labelsize = 15)
+    barchart.xaxis.set_tick_params(rotation=40,labelsize = 10)
+    plt.show()
+
+
+def dist_plot(df: pd.DataFrame, ycols: Union[List, str], bin_size=0.2,width=300,height=200, title="", renderer="browser"):
     """
     Plots pdf curve using KDE estimate.
     """
@@ -607,7 +634,7 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], title="", renderer="bro
     # Add title
     if title == "":
         title = ", ".join(ycols)
-    fig.update_layout(title_text=title)
+    fig.update_layout(title_text=title,width=width, height=height)
     fig.show(renderer=renderer)
 
 
@@ -662,6 +689,7 @@ def bar_plot(
     df: pd.DataFrame,
     xcol: str,
     ycol: str,
+    hue: str = None,
     estimator: str = "mean",
     return_fig: bool = False,
     swap_axis: bool = False,
@@ -679,17 +707,31 @@ def bar_plot(
     if swap_axis:
         xcol, ycol = ycol, xcol
     # order by mean of ycol
-    fig = sns.barplot(
-        data=df,
-        x=xcol,
-        y=ycol,
-        errorbar="sd",
-        estimator=estimator,
-        order=df.groupby(order_x)
-        .mean()
-        .sort_values(order_y, ascending=ascending)
-        .index.unique(),
-    )
+    if ascending is not None:
+        fig = sns.barplot(
+            data=df,
+            x=xcol,
+            y=ycol,
+            errorbar="sd",
+            estimator=estimator,
+            order=df.groupby(order_x)
+            .mean()
+            .sort_values(order_y, ascending=ascending)
+            .index.unique(),
+            hue=hue,
+        )
+    else:
+        fig = sns.barplot(
+            data=df,
+            x=xcol,
+            y=ycol,
+            errorbar="sd",
+            estimator=estimator,
+            order=df.groupby(order_x)
+            .mean()
+            .index.unique(),
+            hue=hue,
+        )
     fig.set_title(title)
     if return_fig:
         return fig.get_figure()
