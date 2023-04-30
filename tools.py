@@ -14,6 +14,7 @@ from pathlib import Path
 from scipy.stats.mstats import winsorize
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
+from sklearn.feature_selection import VarianceThreshold
 from typing import Any, Dict, Iterable, List, Optional, Union
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -84,6 +85,16 @@ def winsor(s: pd.Series, left_bound: int = 0.05, right_bound: int = 0.05):
     bottom 10% elements is 1 (replaced by 1).
     """
     return winsorize(s, limits=[left_bound, right_bound])
+
+
+def variance_threshold_selector(data, threshold=0.5):
+    """
+    Remove columns with less than threshold variance, only for numeric columns.
+    """
+    selector = VarianceThreshold(threshold)
+    num_cols = data.select_dtypes(include=np.number).columns
+    selector.fit(data[num_cols])
+    return data[data.columns[selector.get_support(indices=True)]]
 
 
 def map_mult_dfs(
@@ -777,7 +788,7 @@ def scatter_plot(
     fig.show(renderer=renderer)
 
 
-def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsize: tuple = (16, 10)):
+def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsize: tuple = (16, 10),legend=True):
     """
     Show point estimates and errors using dot marks.
     A point plot represents an estimate of central tendency for a numeric variable by the position of the dot
@@ -789,7 +800,9 @@ def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsiz
         ycols = [ycols]
     plt.figure(figsize=figsize)
     for ycol,color in zip(ycols, sns.color_palette(n_colors=len(ycols))):
-        sns.pointplot(x=xcol, y=ycol, data=df,color=color)
+        sns.pointplot(x=xcol, y=ycol, data=df,color=color,label=ycol)
+    if legend:
+        plt.legend(loc='upper left')
     plt.show()
 
 
@@ -822,9 +835,13 @@ def categorical_scatter_plot(
     df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)
 ):
     """
+    NB: This could be SLOW for large datasets.
+
+    For categorical plots look at https://seaborn.pydata.org/tutorial/categorical.html
     Scatter plot with categorical x axis. See categorical_scatter_plot.png.
     xcol = smoker
     ycol = charges
+
     """
     plt.figure(figsize=figsize)
     sns.swarmplot(x=df[xcol], y=df[ycol])
