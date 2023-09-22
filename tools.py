@@ -68,6 +68,8 @@ def ram_usage(f):
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
     For all numerical columns applies winsor.
+    Assumes df does not have categorical columns!
+
     NB: the interval data remaining is [left_bound,1-right_bound]. I did not change right_bound to 1-right_bound, because
     of round errors: 1-0.8 = 0.19999996
     NB: number of rows remains the same (values not in the boundary are capped).
@@ -849,7 +851,7 @@ def categorical_scatter_plot(
 
 
 def box_plot(
-    df: pd.DataFrame, xcol: str, ycol: str, points: str = "all", renderer="browser"
+    df: pd.DataFrame, xcol: str, ycol: str, points: str = "all", title='', renderer="browser"
 ):
     """
     Box plot with scattered points.
@@ -860,6 +862,7 @@ def box_plot(
     """
 
     fig = px.box(df, x=xcol, y=ycol, points=points)
+    fig.update_layout(title=title)
     fig.show(renderer=renderer)
 
 
