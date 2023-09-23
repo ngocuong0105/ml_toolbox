@@ -57,7 +57,7 @@ def mean_abs(data, real, fct):
         return 0
     err = np.mean(
         abs(data[real] - data[fct])
-        / (pd.concat([data[real], data[fct]], axis=1).max(axis=1) + 0.1 ** 10)
+        / (pd.concat([data[real], data[fct]], axis=1).max(axis=1) + 0.1**10)
     )
     return err
 

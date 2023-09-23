@@ -497,23 +497,27 @@ def get_confusion_matrix(data, real, fct):
     return tn, fp, fn, tp
 
 
-def apply_pca(df: pd.DataFrame, feature_cols:List[str], other_cols: List[str], n_components:int) -> pd.DataFrame:
+def apply_pca(
+    df: pd.DataFrame, feature_cols: List[str], other_cols: List[str], n_components: int
+) -> pd.DataFrame:
     """
     PCA transformation
 
     Assumes no Nans in df[feature_cols]
     """
-    df_standardized = (df[feature_cols] - df[feature_cols].mean()) / df[feature_cols].std()
+    df_standardized = (df[feature_cols] - df[feature_cols].mean()) / df[
+        feature_cols
+    ].std()
 
     # Perform PCA
     pca = PCA()
     principal_components = pca.fit_transform(df_standardized)
 
     # Create new DataFrame with principal components
-    columns = ['PC' + str(i+1) for i in range(len(feature_cols))]
+    columns = ["PC" + str(i + 1) for i in range(len(feature_cols))]
     df_pca = pd.DataFrame(data=principal_components, columns=columns)
     df_pca = pd.concat([df[other_cols], df_pca], axis=1)
-    return df_pca.iloc[:,:len(other_cols)+n_components]
+    return df_pca.iloc[:, : len(other_cols) + n_components]
 
 
 """
@@ -525,8 +529,9 @@ def hist(
     df: pd.DataFrame,
     col: str,
     name: str = "",
-    histnorm:str="probability",
+    histnorm: str = "probability",
     renderer="browser",
+    yaxis=None,
     return_fig=False,
 ):
     """
@@ -537,11 +542,9 @@ def hist(
 
     layout = dict(
         xaxis=dict(range=[df[col].quantile(0.01), df[col].quantile(0.99)]),
-        yaxis=dict(range=[0, 1]),
+        yaxis=dict(range=yaxis),
     )
-    fig = go.Figure(
-        data=[go.Histogram(x=df[col], histnorm=histnorm)], layout=layout
-    )
+    fig = go.Figure(data=[go.Histogram(x=df[col], histnorm=histnorm)], layout=layout)
     fig.update_layout(
         title_text=f"{name}",  # title of plot
         xaxis_title_text=f"{col}",  # xaxis label
@@ -564,7 +567,7 @@ def hist_xcol(
     title="",
     orientation="v",
     order="ascending",
-    bargap=0.2, 
+    bargap=0.2,
     bargroupgap=0.1,
     return_fig=False,
 ):
@@ -609,31 +612,48 @@ def hist_xcol(
     fig.show(renderer=renderer)
 
 
-def count_plot(df: pd.DataFrame, col: str, title: str = "",  figsize=(16, 5), pallette=None,order=None):
+def count_plot(
+    df: pd.DataFrame,
+    col: str,
+    title: str = "",
+    figsize=(16, 5),
+    pallette=None,
+    order=None,
+):
     """
     Count plot for values in a column col
     """
     plt.figure(figsize=figsize)
-    sns.countplot(x=col, data=df, palette=pallette,order=order)
+    sns.countplot(x=col, data=df, palette=pallette, order=order)
     plt.title(title)
     plt.show()
 
 
-def count_nan_plot(df: pd.DataFrame, figsize = (18,9)):
-    df_missing = df.isna().sum() / len(df) *100
+def count_nan_plot(df: pd.DataFrame, figsize=(18, 9)):
+    df_missing = df.isna().sum() / len(df) * 100
     df_missing_index = df_missing.index
     df_missing_values = df_missing.values
 
     fig, ax = plt.subplots(figsize=figsize)
-    barchart = sns.barplot(x = df_missing_index, y = df_missing_values, ax = ax)
-    barchart.axes.set_title("Share of missing values in train data", fontsize=24, loc = 'center')
+    barchart = sns.barplot(x=df_missing_index, y=df_missing_values, ax=ax)
+    barchart.axes.set_title(
+        "Share of missing values in train data", fontsize=24, loc="center"
+    )
     barchart.bar_label(barchart.containers[0], fmt="%.1f%%", fontsize=10)
-    barchart.yaxis.set_tick_params(labelsize = 15)
-    barchart.xaxis.set_tick_params(rotation=40,labelsize = 10)
+    barchart.yaxis.set_tick_params(labelsize=15)
+    barchart.xaxis.set_tick_params(rotation=40, labelsize=10)
     plt.show()
 
 
-def dist_plot(df: pd.DataFrame, ycols: Union[List, str], bin_size=0.2,width=300,height=200, title="", renderer="browser"):
+def dist_plot(
+    df: pd.DataFrame,
+    ycols: Union[List, str],
+    bin_size=0.2,
+    width=300,
+    height=200,
+    title="",
+    renderer="browser",
+):
     """
     Plots pdf curve using KDE estimate.
     """
@@ -647,7 +667,7 @@ def dist_plot(df: pd.DataFrame, ycols: Union[List, str], bin_size=0.2,width=300,
     # Add title
     if title == "":
         title = ", ".join(ycols)
-    fig.update_layout(title_text=title,width=width, height=height)
+    fig.update_layout(title_text=title, width=width, height=height)
     fig.show(renderer=renderer)
 
 
@@ -740,9 +760,7 @@ def bar_plot(
             y=ycol,
             errorbar="sd",
             estimator=estimator,
-            order=df.groupby(order_x)
-            .mean()
-            .index.unique(),
+            order=df.groupby(order_x).mean().index.unique(),
             hue=hue,
         )
     fig.set_title(title)
@@ -754,6 +772,7 @@ def line_plot(
     df: pd.DataFrame,
     xcol: str,
     ycols: Union[List[str], str],
+    yaxis_range=None,
     renderer="browser",
     **filters,
 ):
@@ -766,8 +785,38 @@ def line_plot(
     if isinstance(ycols, str):
         ycols = [ycols]
     fig = px.line(df, x=xcol, y=ycols, markers=True)
-    fig.update_layout(title=f"{filters}")
+    fig.update_layout(title=f"{filters}", yaxis_range=yaxis_range)
     fig.show(renderer=renderer)
+
+
+def multi_line_plot(
+    df: pd.DataFrame,
+    xcol: str,
+    ycol: str,
+    hue_col: str,
+    **filters,
+):
+    """
+    Plots multiple y lines over xcol, where multiple columns are defined by hue!
+    """
+    df = _filter(df, filters)
+    plt.figure()
+    sns.lineplot(data=df, x=xcol, y=ycol, hue=hue_col)
+
+
+def multi_scatter_plot(
+    df: pd.DataFrame,
+    xcol: str,
+    ycol: str,
+    hue_col: str,
+    **filters,
+):
+    """
+    Plots multiple y lines over xcol, where multiple columns are defined by hue!
+    """
+    df = _filter(df, filters)
+    plt.figure()
+    sns.scatterplot(data=df, x=xcol, y=ycol, hue=hue_col)
 
 
 def scatter_plot(
@@ -777,11 +826,13 @@ def scatter_plot(
     renderer="browser",
     size=12,
     trendline=None,
+    **filters,
 ):
     """
     Scatter plot with trendline
     trendline: str can take "ols", "lowess", "glm", "rlm"
     """
+    df = _filter(df, filters)
     df = df.sort_values(xcol)
     if isinstance(ycols, str):
         ycols = [ycols]
@@ -790,7 +841,13 @@ def scatter_plot(
     fig.show(renderer=renderer)
 
 
-def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsize: tuple = (16, 10),legend=True):
+def point_plot(
+    df: pd.DataFrame,
+    xcol: str,
+    ycols: Union[str, List[str]],
+    figsize: tuple = (16, 10),
+    legend=True,
+):
     """
     Show point estimates and errors using dot marks.
     A point plot represents an estimate of central tendency for a numeric variable by the position of the dot
@@ -801,10 +858,10 @@ def point_plot(df: pd.DataFrame, xcol: str, ycols: Union[str, List[str]], figsiz
     if isinstance(ycols, str):
         ycols = [ycols]
     plt.figure(figsize=figsize)
-    for ycol,color in zip(ycols, sns.color_palette(n_colors=len(ycols))):
-        sns.pointplot(x=xcol, y=ycol, data=df,color=color,label=ycol)
+    for ycol, color in zip(ycols, sns.color_palette(n_colors=len(ycols))):
+        sns.pointplot(x=xcol, y=ycol, data=df, color=color, label=ycol)
     if legend:
-        plt.legend(loc='upper left')
+        plt.legend(loc="upper left")
     plt.show()
 
 
@@ -814,7 +871,7 @@ def reg_plot(df: pd.DataFrame, xcol: str, ycol: str, figsize: tuple = (16, 6)):
     """
 
     plt.figure(figsize=figsize)
-    sns.regplot(x=df[xcol], y=df[ycol], ci=95, color="b")
+    sns.regplot(x=df[xcol], y=df[ycol], ci=95, color="r")
     plt.show()
 
 
@@ -851,7 +908,12 @@ def categorical_scatter_plot(
 
 
 def box_plot(
-    df: pd.DataFrame, xcol: str, ycol: str, points: str = "all", title='', renderer="browser"
+    df: pd.DataFrame,
+    xcol: str,
+    ycol: str,
+    points: str = "all",
+    title="",
+    renderer="browser",
 ):
     """
     Box plot with scattered points.
