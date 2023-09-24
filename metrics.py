@@ -6,6 +6,14 @@ import numpy as np
 import sklearn.metrics as skm
 
 
+def mae(data, real, fct):
+    if len(data) == 0:
+        return 0
+    if fct not in data.columns or real not in data.columns:
+        return None
+    return skm.mean_absolute_error(data[real], data[fct])
+
+
 # root mean squared error
 def rmse_p(data, real, fct):
     if len(data) == 0:
@@ -57,7 +65,7 @@ def mean_abs(data, real, fct):
         return 0
     err = np.mean(
         abs(data[real] - data[fct])
-        / (pd.concat([data[real], data[fct]], axis=1).max(axis=1) + 0.1**10)
+        / (pd.concat([data[real], data[fct]], axis=1).max(axis=1) + 0.1 ** 10)
     )
     return err
 
