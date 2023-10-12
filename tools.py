@@ -66,6 +66,14 @@ def ram_usage(f):
     return wrap
 
 
+def _filter(df: pd.DataFrame, filters: Dict):
+    cols = list(filters.keys())
+    vals = [makelist(filters[col]) for col in cols]
+    for col, val in zip(cols, vals):
+        df = df[df[col].isin(val)]
+    return df
+
+
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
     For all numerical columns applies winsor.
@@ -489,7 +497,7 @@ def rolling_features(
         ].transform(lambda s: s.rolling(window, min_periods=1).agg(func))
         feats.append(f"{target}_roll_{func}_{window}")
     data = data.drop(columns="prev")
-    return data, feats
+    return feats, data
 
 
 def get_confusion_matrix(data, real, fct):
@@ -524,6 +532,30 @@ def apply_pca(
 """
 PLOTS
 """
+
+
+def sns_hist(
+    df: pd.DataFrame,
+    col: str,
+    hue_col: str = None,
+    binwidth: int = None,
+    stat="probability",
+    element="bars",
+):
+    """
+    Seaborn histogram
+    https://seaborn.pydata.org/generated/seaborn.histplot.html
+    stat: Aggregate statistic to compute in each bin.
+        count: show the number of observations in each bin
+        frequency: show the number of observations divided by the bin width
+        probability or proportion: normalize such that bar heights sum to 1
+        percent: normalize such that bar heights sum to 100
+        density: normalize such that the total area of the histogram equals 1
+
+    element{“bars”, “step”, “poly”}:
+        Visual representation of the histogram statistic. Only relevant with univariate data.
+    """
+    sns.histplot(df, x=col, hue=hue_col, binwidth=binwidth, stat=stat, element=element)
 
 
 def hist(
@@ -735,6 +767,8 @@ def bar_plot(
     Bar blot with error bars/confidence intervals.
     If you want to have horizontal bars specify swap_axis = True.
     Requires seaborn >= 0.12.2. Note that in wandb seaborn figures does not render x-axis and y-axis
+
+    sns.barplot(train,x=STOCK_ID,y=TARGET,errorbar=None,estimator='std')# with no error bar
     """
     plt.figure(figsize=figsize)
     order_x, order_y = xcol, ycol
@@ -775,6 +809,7 @@ def line_plot(
     ycols: Union[List[str], str],
     yaxis_range=None,
     renderer="browser",
+    title="",
     **filters,
 ):
     """
@@ -786,38 +821,24 @@ def line_plot(
     if isinstance(ycols, str):
         ycols = [ycols]
     fig = px.line(df, x=xcol, y=ycols, markers=True)
-    fig.update_layout(title=f"{filters}", yaxis_range=yaxis_range)
+    fig.update_layout(title=title + f"{filters}", yaxis_range=yaxis_range)
     fig.show(renderer=renderer)
 
 
-def multi_line_plot(
+def sns_line_plot(
     df: pd.DataFrame,
     xcol: str,
     ycol: str,
-    hue_col: str,
+    hue_col: str = None,
     **filters,
 ):
     """
-    Plots multiple y lines over xcol, where multiple columns are defined by hue!
+    Seaborn line plot
+    Allows to plot multiple y lines over xcol, where multiple columns are defined by hue!
     """
     df = _filter(df, filters)
     plt.figure()
     sns.lineplot(data=df, x=xcol, y=ycol, hue=hue_col)
-
-
-def multi_scatter_plot(
-    df: pd.DataFrame,
-    xcol: str,
-    ycol: str,
-    hue_col: str,
-    **filters,
-):
-    """
-    Plots multiple y lines over xcol, where multiple columns are defined by hue!
-    """
-    df = _filter(df, filters)
-    plt.figure()
-    sns.scatterplot(data=df, x=xcol, y=ycol, hue=hue_col)
 
 
 def scatter_plot(
@@ -840,6 +861,22 @@ def scatter_plot(
     fig = px.scatter(df, x=xcol, y=ycols, trendline=trendline)
     fig.update_traces(marker=dict(size=size))
     fig.show(renderer=renderer)
+
+
+def sns_scatter_plot(
+    df: pd.DataFrame,
+    xcol: str,
+    ycol: str,
+    hue_col: str = None,
+    **filters,
+):
+    """
+    Plots multiple y lines over xcol, where multiple columns are defined by hue!
+    https://seaborn.pydata.org/generated/seaborn.scatterplot.html
+    """
+    df = _filter(df, filters)
+    plt.figure()
+    sns.scatterplot(data=df, x=xcol, y=ycol, hue=hue_col)
 
 
 def point_plot(
@@ -912,7 +949,7 @@ def box_plot(
     df: pd.DataFrame,
     xcol: str,
     ycol: str,
-    points: str = "all",
+    points: str = None,
     title="",
     renderer="browser",
 ):
@@ -945,33 +982,48 @@ def corr_heatmap(corr: pd.DataFrame, figsize: tuple = (16, 6)):
     heatmap.set_title("Triangle Correlation Heatmap", fontdict={"fontsize": 20}, pad=16)
 
 
-def _filter(df: pd.DataFrame, filters: Dict):
-    cols = list(filters.keys())
-    vals = [makelist(filters[col]) for col in cols]
-    for col, val in zip(cols, vals):
-        df = df[df[col].isin(val)]
-    return df
+def vertical_lines(vertical_lines_x: List[Any]):
+    """
+    Usage: Run it with another plotting function that is using matplotlib or seaborn plot.
+
+    sns_line_plot(train, SEC_IN_BUCKET, TARGET, hue_col=DATE_ID, stock_id=stock_id)
+    vertical_lines([60,300,480])
+
+    """
+    for line_x in vertical_lines_x:
+        plt.axvline(
+            x=line_x, color="red", linestyle="--"
+        )  # Customize the color and linestyle as needed
 
 
 def fct_plot(
     df: pd.DataFrame,
     xcol: str,
     ycols: Union[List[str], str],
-    forecast_start: str = None,
-    name: str = "",
+    forecast_start: Union[List[Union[str, int]], str] = None,
+    title: str = "",
     renderer="browser",
     marker_size=8,
     return_fig=False,
+    layout="default",
     **filters,
 ):
     """
     Most enhanced forecasting plot using plotly.
+
+    forecast_start: can be string date, int index or list of string dates or int indexes.
+    just make sure you choose the correct layout
+
+    layout: default if you have dates.
     """
     df = _filter(df, filters)
-    forecast_start = pd.to_datetime(forecast_start)
     if len(filters):
-        name = ", ".join("{} = {}".format(key, value) for key, value in filters.items())
-    fig = go.Figure(layout=DEFAULT_LAYOUT, layout_title_text=name)
+        title = ", ".join(
+            "{} = {}".format(key, value) for key, value in filters.items()
+        )
+    if layout == "default":
+        layout = DEFAULT_LAYOUT
+    fig = go.Figure(layout=layout, layout_title_text=title)
     ycols = makelist(ycols)
     for ycol in ycols:
         if marker_size:
@@ -986,18 +1038,23 @@ def fct_plot(
             fig.add_scatter(x=df[xcol], y=df[ycol], name=ycol, mode="lines")
 
     if forecast_start is not None:
-        fig.add_shape(
-            go.layout.Shape(
-                type="line",
-                yref="paper",
-                x0=forecast_start,
-                y0=0,
-                x1=forecast_start,
-                y1=1,
-                line=dict(color="Red", width=1),
+        if layout == "default":
+            forecast_start = [pd.to_datetime(forecast_start)]
+        if not isinstance(forecast_start, List):
+            forecast_start = [forecast_start]
+        for fct in forecast_start:
+            fig.add_shape(
+                go.layout.Shape(
+                    type="line",
+                    yref="paper",
+                    x0=fct,
+                    y0=0,
+                    x1=fct,
+                    y1=1,
+                    line=dict(color="Red", width=1),
+                )
             )
-        )
-    fig.update_layout(title=name)
+    fig.update_layout(title=title)
     if return_fig:
         return fig
     fig.show(renderer=renderer)
