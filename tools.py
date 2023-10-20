@@ -336,7 +336,8 @@ def smooth_data(df: pd.DataFrame, val_col: str, pct_change: float) -> pd.DataFra
     return df
 
 
-def lag_features(
+def add_lag_features(
+    feature_names: List[str],
     data: pd.DataFrame,
     target: str,
     groupby: Union[List[str], str],
@@ -386,14 +387,14 @@ def lag_features(
     if isinstance(lags, int):
         lags = [i for i in range(1, lags + 1)]
 
-    feats = []
     for lag in lags:
-        data[f"lag_{target}_{lag}"] = data.groupby(groupby)[target].shift(lag)
-        feats.append(f"lag_{target}_{lag}")
-    return data, feats
+        data[f"add_lag_features_{target}_{lag}"] = data.groupby(groupby)[target].shift(lag)
+        feature_names.append(f"add_lag_features_{target}_{lag}")
+    return data
 
 
-def diff_features(
+def add_differenced_features(
+    feature_names: List,
     data: pd.DataFrame,
     target: str,
     groupby: Union[List[str], str],
@@ -440,14 +441,14 @@ def diff_features(
     if isinstance(lags, int):
         lags = [i for i in range(1, lags + 1)]
 
-    feats = []
     for lag in lags:
-        data[f"diff_{target}_{lag}"] = data.groupby(groupby)[target].diff(lag)
-        feats.append(f"diff_{target}_{lag}")
-    return data, feats
+        data[f"add_differenced_features_{target}_{lag}"] = data.groupby(groupby)[target].diff(lag)
+        feature_names.append(f"add_differenced_features_{target}_{lag}")
+    return data
 
 
-def rolling_features(
+def add_rolling_features(
+    feature_names: List,
     data: pd.DataFrame,
     target: str,
     func: str,
@@ -455,7 +456,8 @@ def rolling_features(
     window_sizes: Union[List[int], int],
 ) -> tuple:
     """
-    Creates rolling mean features with window sizes from 1 to window_sizes+1 or a list window_sizes.
+    Creates rolling mean features with window sizes from 2 to window_sizes+1 or a list window_sizes.
+    window_size = 1 is just the same element.
     data: pd.DataFrame is the input data
     target: str is the target column name
     groupby: Union[List[str], str] is the column name or list of column names to group by
@@ -488,16 +490,15 @@ def rolling_features(
     """
 
     if isinstance(window_sizes, int):
-        window_sizes = [i for i in range(1, window_sizes + 1)]
-    feats = []
+        window_sizes = [i for i in range(2, window_sizes + 1)]
     for window in window_sizes:
         data["prev"] = data.groupby(groupby)[target].shift(1)
-        data[f"{target}_roll_{func}_{window}"] = data.groupby(groupby)[
-            "prev"
+        data[f"add_rolling_features_{target}_{func}_{window}"] = data.groupby(groupby)[
+            target # "prev"
         ].transform(lambda s: s.rolling(window, min_periods=1).agg(func))
-        feats.append(f"{target}_roll_{func}_{window}")
+        feature_names.append(f"add_rolling_features_{target}_{func}_{window}")
     data = data.drop(columns="prev")
-    return feats, data
+    return data
 
 
 def get_confusion_matrix(data, real, fct):
@@ -1073,7 +1074,7 @@ def fct_error_plot(
     """
     df = _filter(df, filters)
     name = ", ".join("{} = {}".format(key, value) for key, value in filters.items())
-    df["error"] = df[fct] - df[act]
+    df["error"] = df[act] - df[fct]
     return hist(
         df,
         col="error",
