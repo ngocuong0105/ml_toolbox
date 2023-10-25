@@ -388,7 +388,9 @@ def add_lag_features(
         lags = [i for i in range(1, lags + 1)]
 
     for lag in lags:
-        data[f"add_lag_features_{target}_{lag}"] = data.groupby(groupby)[target].shift(lag)
+        data[f"add_lag_features_{target}_{lag}"] = data.groupby(groupby)[target].shift(
+            lag
+        )
         feature_names.append(f"add_lag_features_{target}_{lag}")
     return data
 
@@ -442,7 +444,9 @@ def add_differenced_features(
         lags = [i for i in range(1, lags + 1)]
 
     for lag in lags:
-        data[f"add_differenced_features_{target}_{lag}"] = data.groupby(groupby)[target].diff(lag)
+        data[f"add_differenced_features_{target}_{lag}"] = data.groupby(groupby)[
+            target
+        ].diff(lag)
         feature_names.append(f"add_differenced_features_{target}_{lag}")
     return data
 
@@ -494,7 +498,7 @@ def add_rolling_features(
     for window in window_sizes:
         data["prev"] = data.groupby(groupby)[target].shift(1)
         data[f"add_rolling_features_{target}_{func}_{window}"] = data.groupby(groupby)[
-            target # "prev"
+            target  # "prev"
         ].transform(lambda s: s.rolling(window, min_periods=1).agg(func))
         feature_names.append(f"add_rolling_features_{target}_{func}_{window}")
     data = data.drop(columns="prev")
@@ -829,17 +833,31 @@ def line_plot(
 def sns_line_plot(
     df: pd.DataFrame,
     xcol: str,
-    ycol: str,
+    ycol: Union[str, List[str]],
     hue_col: str = None,
+    title: str = "",
+    new_plot: bool = True,
     **filters,
 ):
     """
     Seaborn line plot
     Allows to plot multiple y lines over xcol, where multiple columns are defined by hue!
+    new_plot: is used when using that function in a for loop
     """
     df = _filter(df, filters)
-    plt.figure()
-    sns.lineplot(data=df, x=xcol, y=ycol, hue=hue_col)
+    if new_plot:
+        plt.figure()
+    if isinstance(ycol, str):
+        ax = sns.lineplot(data=df, x=xcol, y=ycol, hue=hue_col, legend=True)
+    else:
+        ax = sns.lineplot(
+            data=pd.melt(df[[xcol] + ycol], id_vars=xcol),
+            x=xcol,
+            y="value",
+            hue="variable",
+        )
+    ax.set_title(title)
+    ax.xaxis.set_tick_params(rotation=45)
 
 
 def scatter_plot(
