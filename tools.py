@@ -5,6 +5,7 @@ from urllib.request import urlopen
 import pandas as pd
 import numpy as np
 from numba import jit
+import polars as pl
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
@@ -72,6 +73,44 @@ def _filter(df: pd.DataFrame, filters: Dict):
     for col, val in zip(cols, vals):
         df = df[df[col].isin(val)]
     return df
+
+
+def reduce_memory(data):
+    for col in list(data):
+        col_type = data[col].dtype
+
+        if col_type != object:
+            c_min = data[col].min()
+            c_max = data[col].max()
+            if str(col_type)[:3] == "int":
+                if c_min > np.iinfo(np.int8).min and c_max < np.iinfo(np.int8).max:
+                    if c_min >= 0:
+                        data[col] = data[col].astype(np.uint8)
+                    else:
+                        data[col] = data[col].astype(np.int8)
+                elif c_min > np.iinfo(np.int16).min and c_max < np.iinfo(np.int16).max:
+                    if c_min >= 0:
+                        data[col] = data[col].astype(np.uint16)
+                    else:
+                        data[col] = data[col].astype(np.int16)
+                elif c_min > np.iinfo(np.int32).min and c_max < np.iinfo(np.int32).max:
+                    if c_min >= 0:
+                        data[col] = data[col].astype(np.uint32)
+                    else:
+                        data[col] = data[col].astype(np.int32)
+                elif c_min > np.iinfo(np.int64).min and c_max < np.iinfo(np.int64).max:
+                    if c_min >= 0:
+                        data[col] = data[col].astype(np.uint64)
+                    else:
+                        data[col] = data[col].astype(np.int64)
+            else:
+                if (
+                    c_min > np.finfo(np.float32).min
+                    and c_max < np.finfo(np.float32).max
+                ):
+                    data[col] = data[col].astype(np.float32)
+                else:
+                    data[col] = data[col].astype(np.float64)
 
 
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
@@ -336,13 +375,14 @@ def smooth_data(df: pd.DataFrame, val_col: str, pct_change: float) -> pd.DataFra
     return df
 
 
+@timing
 def add_lag_features(
     feature_names: List[str],
     data: pd.DataFrame,
     target: str,
     groupby: Union[List[str], str],
     lags: Union[List[int], int],
-) -> tuple:
+) -> pd.DataFrame:
     """
     Creates lag features with lags from 1 to lags+1 or a list lags.
 
@@ -384,24 +424,27 @@ def add_lag_features(
     """
     if isinstance(groupby, str):
         groupby = [groupby]
+    groupby_name = "_".join(groupby)
+
     if isinstance(lags, int):
-        lags = [i for i in range(1, lags + 1)]
+        lags = [lags]
 
     for lag in lags:
-        data[f"add_lag_features_{target}_{lag}"] = data.groupby(groupby)[target].shift(
-            lag
-        )
-        feature_names.append(f"add_lag_features_{target}_{lag}")
+        data[f"add_lag_features_{target}_{groupby_name}_{lag}"] = data.groupby(groupby)[
+            target
+        ].shift(lag)
+        feature_names.append(f"add_lag_features_{target}_{groupby_name}_{lag}")
     return data
 
 
+@timing
 def add_differenced_features(
     feature_names: List,
     data: pd.DataFrame,
     target: str,
     groupby: Union[List[str], str],
     lags: Union[List[int], int],
-) -> tuple:
+) -> pd.DataFrame:
     """
     Creates lag features with lags from 1 to lags+1 or a list lags.
     data: pd.DataFrame is the input data
@@ -441,13 +484,33 @@ def add_differenced_features(
     if isinstance(groupby, str):
         groupby = [groupby]
     if isinstance(lags, int):
-        lags = [i for i in range(1, lags + 1)]
+        lags = [lags]
 
     for lag in lags:
         data[f"add_differenced_features_{target}_{lag}"] = data.groupby(groupby)[
             target
         ].diff(lag)
         feature_names.append(f"add_differenced_features_{target}_{lag}")
+    return data
+
+
+def add_pct_change_features(
+    feature_names: List,
+    data: pd.DataFrame,
+    target: str,
+    groupby: Union[List[str], str],
+    lags: Union[List[int], int],
+) -> tuple:
+    if isinstance(groupby, str):
+        groupby = [groupby]
+    if isinstance(lags, int):
+        lags = [lags]
+
+    for lag in lags:
+        data[f"add_pct_change_features_{target}_{lag}"] = data.groupby(groupby)[
+            target
+        ].pct_change(lag)
+        feature_names.append(f"add_pct_change_features_{target}_{lag}")
     return data
 
 
@@ -458,14 +521,16 @@ def add_rolling_features(
     func: str,
     groupby: Union[List[str], str],
     window_sizes: Union[List[int], int],
-) -> tuple:
+    shift_period: int = 0,
+) -> pd.DataFrame:
     """
     Creates rolling mean features with window sizes from 2 to window_sizes+1 or a list window_sizes.
-    window_size = 1 is just the same element.
+    window_size = 1 is just the prev element.
     data: pd.DataFrame is the input data
     target: str is the target column name
     groupby: Union[List[str], str] is the column name or list of column names to group by
     window_sizes: Union[List[int],int] is the number of window sizes or a list of window sizes
+    shift_period: int is the number of periods to shift the target column by (use it if your feature dpeends on the column you want to predict)
 
     Input:
     data: is
@@ -494,12 +559,96 @@ def add_rolling_features(
     """
 
     if isinstance(window_sizes, int):
-        window_sizes = [i for i in range(2, window_sizes + 1)]
+        window_sizes = [window_sizes]
+
     for window in window_sizes:
-        data["prev"] = data.groupby(groupby)[target].shift(1)
+        data["prev"] = data.groupby(groupby)[target].shift(shift_period)
         data[f"add_rolling_features_{target}_{func}_{window}"] = data.groupby(groupby)[
-            target  # "prev"
+            "prev"
         ].transform(lambda s: s.rolling(window, min_periods=1).agg(func))
+        feature_names.append(f"add_rolling_features_{target}_{func}_{window}")
+    data = data.drop(columns="prev")
+    return data
+
+
+@timing
+def add_rolling_features_polars(
+    feature_names: List,
+    data: pl.DataFrame,
+    target: str,
+    func: str,
+    groupby: Union[List[str], str],
+    window_sizes: Union[List[int], int],
+    shift_period: int = 0,
+) -> pl.DataFrame:
+    """
+        data_pl = pl.DataFrame(data)
+        for col in ["add_fct"]:
+            for agg in ['mean']:
+                data_pl = add_rolling_features_polars(feature_names, data_pl, col, agg, groupby=[STOCK_ID, DATE_ID],window_sizes=[3,6,10])
+        data = data_pl.to_pandas().set_index(data.index)
+    """
+    if isinstance(window_sizes, int):
+        window_sizes = [window_sizes]
+    if isinstance(groupby, str):
+        groupby = [groupby]
+    for window in window_sizes:
+        data = data.with_columns(
+            pl.col(target).shift(shift_period).over(groupby).alias("prev")
+        )
+        if func == "mean":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_mean(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+        elif func == "std":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_std(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+        elif func == "min":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_min(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+        elif func == "max":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_max(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+        elif func == "sum":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_mean(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+            data = data.with_columns(
+                pl.col(f"add_rolling_features_{target}_{func}_{window}") * window
+            )
+        elif func == "median":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_median(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+        elif func == "skew":
+            data = data.with_columns(
+                pl.col("prev")
+                .rolling_skew(window_size=window)
+                .over(groupby)
+                .alias(f"add_rolling_features_{target}_{func}_{window}"),
+            )
+
         feature_names.append(f"add_rolling_features_{target}_{func}_{window}")
     data = data.drop(columns="prev")
     return data
