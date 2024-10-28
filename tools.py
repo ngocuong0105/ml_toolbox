@@ -23,7 +23,6 @@ from dateutil.relativedelta import relativedelta
 from functools import wraps
 from time import time
 
-
 """
 CALCULATIONS
 """
