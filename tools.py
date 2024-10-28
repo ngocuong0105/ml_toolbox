@@ -582,11 +582,11 @@ def add_rolling_features_polars(
     shift_period: int = 0,
 ) -> pl.DataFrame:
     """
-        data_pl = pl.DataFrame(data)
-        for col in ["add_fct"]:
-            for agg in ['mean']:
-                data_pl = add_rolling_features_polars(feature_names, data_pl, col, agg, groupby=[STOCK_ID, DATE_ID],window_sizes=[3,6,10])
-        data = data_pl.to_pandas().set_index(data.index)
+    data_pl = pl.DataFrame(data)
+    for col in ["add_fct"]:
+        for agg in ['mean']:
+            data_pl = add_rolling_features_polars(feature_names, data_pl, col, agg, groupby=[STOCK_ID, DATE_ID],window_sizes=[3,6,10])
+    data = data_pl.to_pandas().set_index(data.index)
     """
     if isinstance(window_sizes, int):
         window_sizes = [window_sizes]
