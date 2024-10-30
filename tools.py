@@ -134,13 +134,6 @@ def git_commit_and_run():
         print(f"An error occurred while committing changes: {e}")
         sys.exit(1)
 
-    # Run the main application
-    try:
-        subprocess.run(["python", "-m", "jane_street"], check=True)
-    except subprocess.CalledProcessError as e:
-        print(f"An error occurred while running the main application: {e}")
-        sys.exit(1)
-
 """
 CALCULATIONS
 """
