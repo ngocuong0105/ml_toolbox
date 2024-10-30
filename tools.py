@@ -35,10 +35,11 @@ def timing(f):
 
     @wraps(f)
     def wrap(*args, **kw):
+        print(f'Starting {f.__name__}')
         ts = time()
         result = f(*args, **kw)
         te = time()
-        print(f"func: {f.__name__} took: {round(te-ts,5)} sec")
+        print(f"func: {f.__name__} took: {round(te-ts,0)} sec")
         return result
 
     return wrap
