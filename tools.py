@@ -119,6 +119,7 @@ def git_commit_and_run():
 
     # Change to the directory where your Git repository is located
     repo_dir = os.path.dirname(os.path.abspath(__file__))
+    print(repo_dir)
     os.chdir(repo_dir)
 
     try:
