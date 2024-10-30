@@ -1,6 +1,7 @@
 import os
+import sys
+import subprocess
 import dill as pickle  # import pickle
-
 from urllib.request import urlopen
 import pandas as pd
 import numpy as np
@@ -24,7 +25,7 @@ from functools import wraps
 from time import time
 
 """
-CALCULATIONS
+dev helpers
 """
 
 
@@ -112,7 +113,37 @@ def reduce_memory(data):
                 else:
                     data[col] = data[col].astype(np.float64)
 
+def git_commit_and_run():
+    # Define the commit message
+    commit_message = "Automatic commit before running the script"
 
+    # Change to the directory where your Git repository is located
+    repo_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(repo_dir)
+
+    try:
+        # Add changes to the staging area
+        subprocess.run(["git", "add", "."], check=True)
+
+        # Commit the changes
+        subprocess.run(["git", "commit", "-m", commit_message], check=True)
+
+        print("Changes committed successfully.")
+
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while committing changes: {e}")
+        sys.exit(1)
+
+    # Run the main application
+    try:
+        subprocess.run(["python", "-m", "jane_street"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while running the main application: {e}")
+        sys.exit(1)
+
+"""
+CALCULATIONS
+"""
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
     For all numerical columns applies winsor.
