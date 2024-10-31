@@ -36,7 +36,7 @@ def timing(f):
 
     @wraps(f)
     def wrap(*args, **kw):
-        print(f'Starting {f.__name__}')
+        print(f"Starting {f.__name__}")
         ts = time()
         result = f(*args, **kw)
         te = time()
@@ -113,14 +113,15 @@ def reduce_memory(data):
                 else:
                     data[col] = data[col].astype(np.float64)
 
-def git_commit_and_run():
+
+def git_commit_and_run(commit_message=None):
     # Define the commit message
-    commit_message = "Automatic commit before running the script"
+    if commit_message == None:
+        commit_message = "Automatic commit before running the script"
 
     # Change to the directory where your Git repository is located
-    repo_dir = os.path.dirname(os.path.abspath(__file__))
-    print(repo_dir)
-    os.chdir(repo_dir)
+    # repo_dir = os.path.dirname(os.path.abspath(__file__)) # this gives ml_toolbox dir
+    # os.chdir(repo_dir)
 
     try:
         # Add changes to the staging area
@@ -135,9 +136,12 @@ def git_commit_and_run():
         print(f"An error occurred while committing changes: {e}")
         sys.exit(1)
 
+
 """
 CALCULATIONS
 """
+
+
 def winsor_df(df: pd.DataFrame, left_bound: int = 0.05, right_bound: int = 0.05):
     """
     For all numerical columns applies winsor.
